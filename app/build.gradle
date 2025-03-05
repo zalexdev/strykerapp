@@ -3,9 +3,7 @@ plugins {
 }
 
 android {
-    lint {
-        baseline = file("lint-baseline.xml")
-    }
+    
     compileSdk 31
     packagingOptions {
         resources.excludes.add("META-INF/*")
