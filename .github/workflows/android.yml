@@ -1,6 +1,8 @@
 name: Android CI
 
+  
 on:
+workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
@@ -24,3 +26,8 @@ jobs:
       run: chmod +x gradlew
     - name: Build with Gradle
       run: ./gradlew build
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-directory
+        path: app/build/outputs/apk
+    - name: Upload sdk directory
