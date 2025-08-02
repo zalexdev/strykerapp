@@ -818,7 +818,7 @@ public class Core {
         putListString("installed_modules",mods);
     }
     // Unzipping a file
-    public void unzip(File zipFile, File targetDirectory)  {
+   public void unzip(File zipFile, File targetDirectory)  {
 
         if(!targetDirectory.exists()) {
             targetDirectory.mkdirs();
@@ -834,26 +834,28 @@ public class Core {
             byte[] buffer = new byte[8192];
             while ((ze = zis.getNextEntry()) != null) {
                 File file = new File(targetDirectory, ze.getName());
+                
+                // Security check: Prevent Zip Slip vulnerability
+                if (!file.toPath().normalize().startsWith(targetDirectory.toPath().normalize())) {
+                    throw new IllegalArgumentException("Zip entry is outside of the target directory: " + ze.getName());
+                }
+                
                 File dir = ze.isDirectory() ? file : file.getParentFile();
                 if (!dir.isDirectory() && !dir.mkdirs())
                     throw new FileNotFoundException("Failed to ensure directory: " +
                             dir.getAbsolutePath());
                 if (ze.isDirectory())
                     continue;
-                FileOutputStream fout = new FileOutputStream(file);
-                try {
+                try (FileOutputStream fout = new FileOutputStream(file)) {
                     while ((count = zis.read(buffer)) != -1)
                         fout.write(buffer, 0, count);
-                } finally {
-                    fout.close();
                 }
             }
         } finally {
             zis.close();
         }
     } catch (IOException e) {
-        e.printStackTrace();
-
+        throw new RuntimeException("Failed to unzip file: " + zipFile.getName(), e);
         }
     }
     // Checking if the core is mounted. If it is not, it will mount it.
@@ -946,3 +948,4 @@ public class Core {
     }
 
 }
+
