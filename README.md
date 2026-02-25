@@ -35,6 +35,16 @@ It's been an incredible ride — from the first alpha back in July 2021 to 140,0
 
 ---
 
+### 📬 Stay in Touch
+
+| | |
+|---|---|
+| 🌐 **Website** | [zalexdev.com](https://zalexdev.com) |
+| ✈️ **Telegram** | [@strykerapp](https://t.me/strykerapp) |
+
+---
+
+
 ### 🙏 Thank You
 
 To every user, tester, contributor, and supporter — **thank you**. You made Stryker what it was.
