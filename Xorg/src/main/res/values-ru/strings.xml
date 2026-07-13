@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources
+  xmlns:tools="http://schemas.android.com/tools"
+  tools:ignore="MissingTranslation">
+  <string name="init">Инициализация</string>
+  <string name="please_wait">Пожалуйста, подождите, пока данные загружаются</string>
+
+  <string name="device_config">Конфигурация устройства</string>
+  <string name="device_change_cfg">Изменить конфигурацию устройства</string>
+
+  <string name="download_unneeded">Загрузка не требуется</string>
+  <string name="connecting_to">Подключение к %s</string>
+  <string name="failed_connecting_to">Не удалось подключиться к %s</string>
+  <string name="error_connecting_to">Ошибка подключения к %s</string>
+  <string name="dl_from">Загрузка данных из %s</string>
+  <string name="error_dl_from">Ошибка загрузки данных из %s</string>
+  <string name="error_write">Ошибка записи в %s</string>
+  <string name="dl_progress">%1$.0f%% выполнено: файл %2$s</string>
+  <string name="dl_finished">Завершено</string>
+
+  <string name="storage_phone">Внутренняя память — %d МБ свободно</string>
+  <string name="storage_sd">Память SD-карты — %d МБ свободно</string>
+  <string name="storage_custom">Указать каталог</string>
+  <string name="storage_commandline">Параметры командной строки, один аргумент на строку</string>
+  <string name="storage_question">Расположение данных для установки</string>
+  <string name="optional_downloads">Загрузки</string>
+  <string name="downloads">Загрузки</string>
+  <string name="ok">ОК</string>
+  <string name="cancel">Отмена</string>
+
+  <string name="controls_arrows">Стрелки / joystick / dpad</string>
+  <string name="controls_trackball">Trackball</string>
+  <string name="controls_accel">Accelerometer</string>
+  <string name="controls_touch">Только сенсорный экран</string>
+  <string name="controls_question">Какие клавиши навигации есть на вашем устройстве?</string>
+
+  <string name="controls_additional">Дополнительные элементы управления</string>
+  <string name="controls_screenkb">Экранная клавиатура</string>
+  <string name="controls_accelnav">Accelerometer</string>
+
+  <string name="controls_screenkb_size">Размер экранной клавиатуры</string>
+  <string name="controls_screenkb_drawsize">Размер изображений кнопок</string>
+  <string name="controls_screenkb_large">Большой</string>
+  <string name="controls_screenkb_medium">Средний</string>
+  <string name="controls_screenkb_small">Маленький</string>
+  <string name="controls_screenkb_tiny">Крошечный</string>
+  <string name="controls_screenkb_custom">Пользовательский</string>
+  <string name="controls_screenkb_theme">Тема экранной клавиатуры</string>
+  <string name="controls_screenkb_by">%1$s от %2$s</string>
+  <string name="controls_screenkb_transparency">Прозрачность экранной клавиатуры</string>
+  <string name="controls_screenkb_trans_0">Невидимая</string>
+  <string name="controls_screenkb_trans_1">Почти невидимая</string>
+  <string name="controls_screenkb_trans_2">Прозрачная</string>
+  <string name="controls_screenkb_trans_3">Полупрозрачная</string>
+  <string name="controls_screenkb_trans_4">Непрозрачная</string>
+
+  <string name="trackball_no_dampening">Без сглаживания</string>
+  <string name="trackball_fast">Быстро</string>
+  <string name="trackball_medium">Средне</string>
+  <string name="trackball_slow">Медленно</string>
+  <string name="trackball_question">Сглаживание trackball</string>
+
+  <string name="accel_veryfast">Очень быстро</string>
+  <string name="accel_fast">Быстро</string>
+  <string name="accel_medium">Средне</string>
+  <string name="accel_slow">Медленно</string>
+  <string name="accel_veryslow">Очень медленно</string>
+  <string name="accel_question">Чувствительность accelerometer</string>
+
+  <string name="accel_floating">Плавающий</string>
+  <string name="accel_fixed_start">Фиксированный при запуске приложения</string>
+  <string name="accel_fixed_horiz">Фиксированный по ориентации стола</string>
+  <string name="accel_question_center">Центральная позиция accelerometer</string>
+
+  <string name="mouse_emulation">Эмуляция мыши</string>
+  <string name="rightclick_question">Правый клик мыши</string>
+  <string name="rightclick_menu">Клавиша меню</string>
+  <string name="rightclick_key">Физическая клавиша</string>
+  <string name="rightclick_multitouch">Касание экрана вторым пальцем</string>
+  <string name="rightclick_pressure">Касание экрана с нажимом</string>
+  <string name="rightclick_none">Отключить правый клик мыши</string>
+
+  <string name="leftclick_question">Левый клик мыши</string>
+  <string name="leftclick_normal">Обычный</string>
+  <string name="leftclick_near_cursor">Касание рядом с курсором мыши</string>
+  <string name="leftclick_multitouch">Касание экрана вторым пальцем</string>
+  <string name="leftclick_pressure">Касание экрана с нажимом</string>
+  <string name="leftclick_dpadcenter">Клик trackball / центр joystick</string>
+  <string name="leftclick_timeout">Удержание в одной точке</string>
+  <string name="leftclick_tap">Нажатие</string>
+  <string name="leftclick_tap_or_timeout">Нажатие или удержание</string>
+  <string name="leftclick_timeout_time">Тайм-аут удержания</string>
+  <string name="leftclick_timeout_time_0">0,3 сек</string>
+  <string name="leftclick_timeout_time_1">0,5 сек</string>
+  <string name="leftclick_timeout_time_2">0,7 сек</string>
+  <string name="leftclick_timeout_time_3">1 сек</string>
+  <string name="leftclick_timeout_time_4">1,5 сек</string>
+  <string name="click_with_dpadcenter">Левый клик мыши с trackball / центром joystick</string>
+
+  <string name="advanced">Расширенные возможности</string>
+  <string name="mouse_keepaspectratio">Сохранять соотношение сторон экрана 4:3</string>
+  <string name="mouse_showcreenunderfinger">Показывать экран под пальцем в отдельном окне</string>
+  <string name="mouse_showcreenunderfinger2">Экранная лупа</string>
+  <string name="mouse_joystickmouse">Перемещение мыши с помощью joystick или trackball</string>
+  <string name="mouse_joystickmousespeed">Скорость перемещения мыши с joystick</string>
+  <string name="mouse_joystickmouseaccel">Ускорение перемещения мыши с joystick</string>
+  <string name="mouse_relative">Относительное перемещение мыши (режим ноутбука)</string>
+  <string name="mouse_relative_speed">Скорость относительного перемещения мыши</string>
+  <string name="mouse_relative_accel">Ускорение относительного перемещения мыши</string>
+  <string name="mouse_hover_jitter_filter">Фильтрация дрожания для наведения стилуса/пальца</string>
+  <string name="mouse_gyroscope_mouse">Управление мышью с помощью gyroscope</string>
+  <string name="mouse_gyroscope_mouse_sensitivity">Чувствительность gyroscope</string>
+  <string name="mouse_finger_hover">Наведение пальца</string>
+  <string name="mouse_subframe_touch_events">Несколько событий касания на видео-кадр</string>
+
+  <string name="none">Нет</string>
+
+  <string name="measurepressure">Калибровка давления сенсорного экрана</string>
+  <string name="measurepressure_touchplease">Проведите пальцем по экрану в течение двух секунд</string>
+  <string name="measurepressure_response">Давление %1$03d радиус %2$03d</string>
+
+  <string name="audiobuf_verysmall">Очень маленький (быстрые устройства, меньше задержки)</string>
+  <string name="audiobuf_small">Маленький</string>
+  <string name="audiobuf_medium">Средний</string>
+  <string name="audiobuf_large">Большой (старые устройства, если звук прерывистый)</string>
+  <string name="audiobuf_question">Размер аудио-буфера</string>
+
+  <string name="remap_hwkeys">Переназначение физических клавиш</string>
+  <string name="remap_hwkeys_press">Нажмите любую клавишу, кроме HOME и POWER, можно использовать клавиши громкости</string>
+  <string name="remap_hwkeys_select">Выбрать код клавиши SDL</string>
+  <string name="remap_hwkeys_select_simple">Выбрать действие</string>
+  <string name="remap_hwkeys_select_more_keys">Показать все коды клавиш</string>
+
+  <string name="remap_screenkb">Переназначение экранных элементов управления</string>
+  <string name="remap_screenkb_joystick">Joystick</string>
+  <string name="remap_screenkb_button">Кнопка</string>
+  <string name="remap_screenkb_button_text">Кнопка ввода текста</string>
+  <string name="remap_screenkb_button_gestures">Жесты двумя пальцами на экране</string>
+  <string name="remap_screenkb_button_gestures_sensitivity">Чувствительность жестов двумя пальцами</string>
+  <string name="remap_screenkb_button_zoomin">Жест приближения двумя пальцами</string>
+  <string name="remap_screenkb_button_zoomout">Жест отдаления двумя пальцами</string>
+  <string name="remap_screenkb_button_rotateleft">Жест поворота влево двумя пальцами</string>
+  <string name="remap_screenkb_button_rotateright">Жест поворота вправо двумя пальцами</string>
+
+  <string name="screenkb_custom_layout">Настройка макета экранной клавиатуры</string>
+  <string name="screenkb_custom_layout_help">Нажмите «Назад», когда закончите. Измените размер кнопок, проводя по пустому пространству.</string>
+  <string name="screenkb_floating_joystick">Плавающий joystick</string>
+
+  <string name="calibrate_touchscreen">Калибровка сенсорного экрана</string>
+  <string name="calibrate_touchscreen_touch">Коснитесь всех краев экрана, нажмите «Назад» когда закончите</string>
+
+  <string name="video">Настройки видео</string>
+  <string name="video_smooth">Линейная фильтрация видео</string>
+  <string name="video_separatethread">Отдельный поток для видео, может увеличить FPS, но также может вызвать сбой приложения
+  </string>
+  <string name="video_orientation_vertical">Книжная/вертикальная ориентация экрана</string>
+  <string name="video_orientation_autodetect">Автоопределение ориентации экрана</string>
+  <string name="video_bpp_24">Глубина цвета экрана 24 bpp</string>
+  <string name="video_immersive">Скрыть системные кнопки навигации / полноэкранный режим</string>
+  <string name="tv_borders">Границы ТВ</string>
+
+  <string name="text_edit_click_here">Нажмите, чтобы начать ввод, нажмите «Назад» когда закончите</string>
+
+  <string name="display_size_mouse">Режим эмуляции мыши</string>
+  <string name="display_size">Размер экрана для эмуляции мыши</string>
+  <string name="display_size_desktop">Рабочий стол, без эмуляции</string>
+  <string name="display_size_large">Большой (планшеты)</string>
+  <string name="display_size_small">Маленький, лупа</string>
+  <string name="display_size_small_touchpad">Маленький, режим тачпада</string>
+  <string name="display_size_tiny">Крошечный</string>
+  <string name="display_size_tiny_touchpad">Крошечный, режим тачпада</string>
+
+  <string name="show_more_options">Показать больше опций</string>
+
+  <string name="hardware_mouse_detected">Обнаружена аппаратная мышь, эмуляция мыши отключена</string>
+
+  <string name="not_enough_ram">Недостаточно RAM</string>
+  <string name="not_enough_ram_size">Приложению необходимо %1$d МБ RAM, на вашем устройстве %2$d МБ</string>
+  <string name="ignore">Игнорировать</string>
+
+  <string name="calibrate_gyroscope">Калибровка gyroscope</string>
+  <string name="calibrate_gyroscope_text">Положите устройство на ровную поверхность</string>
+  <string name="calibrate_gyroscope_not_supported">Ваше устройство не имеет gyroscope</string>
+
+  <string name="reset_config">Сбросить конфигурацию по умолчанию</string>
+  <string name="reset_config_ask">Сбросить все опции к значениям по умолчанию?</string>
+
+  <string name="cancel_download">Отменить загрузку данных?</string>
+  <string name="cancel_download_resume">Вы можете продолжить позже, данные не будут загружены повторно.</string>
+  <string name="yes">Да</string>
+  <string name="no">Нет</string>
+
+  <string name="gamehelper_sign_in_failed">Не удалось войти. Проверьте подключение к сети и попробуйте снова.
+  </string>
+  <string name="gamehelper_app_misconfigured">Приложение настроено неправильно. Проверьте, что имя пакета
+    и сертификат подписи совпадают с идентификатором клиента, созданным в Консоли разработчика. Также, если приложение ещё не
+    опубликовано, проверьте, что учётная запись, которой вы пытаетесь войти, указана как учётная запись тестировщика. Подробности см. в журналах.
+  </string>
+  <string name="gamehelper_license_failed">Проверка лицензии не удалась.</string>
+  <string name="gamehelper_unknown_error">Неизвестная ошибка.</string>
+  <string name="accessing_network">Подключение к сети, пожалуйста подождите</string>
+
+  <string name="google_play_game_services_app_id" translatable="false">==GOOGLEPLAYGAMESERVICES_APP_ID==</string>
+
+  <string name="restarting_please_wait">Перезапуск, пожалуйста подождите.</string>
+
+  <string name="notification_app_is_running">%s работает</string>
+  <string name="notification_stop">Остановить</string>
+
+</resources>

@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">StrykerOSS</string>
+    <string name="navigation_drawer_open">Открыть боковое меню</string>
+    <string name="navigation_drawer_close">Закрыть боковое меню</string>
+    <string name="nav_header_title" translatable="false">StrykerOSS</string>
+    <string name="nav_header_subtitle" translatable="false">StrykerOSS</string>
+    <string name="nav_header_desc">Заголовок навигации</string>
+    <string name="action_settings">Настройки</string>
+
+    <string name="menu_home">Главная</string>
+    <string name="menu_gallery">Галерея</string>
+    <string name="menu_slideshow">Слайд-шоу</string>
+</resources>
