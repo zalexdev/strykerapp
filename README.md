@@ -1,4 +1,7 @@
-# StrykerOSS
+STRYKER_RELEASE_STORE_FILE=/path/to/keystore.jks
+STRYKER_RELEASE_STORE_PASSWORD=...
+STRYKER_RELEASE_KEY_ALIAS=...
+STRYKER_RELEASE_KEY_PASSWORD=...# StrykerOSS
 
 > A free and open-source mobile pentest suite for Android. Authorized testing only.
 
