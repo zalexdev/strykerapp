@@ -29,8 +29,8 @@
       "note": "Debian trixie arm64, same tree as rootless-650. arm64-v8a only.",
       "chroot64": {
         "url": "https://github.com/zalexdev/strykerapp/releases/download/chroot-650/chroot64-debian.tar.gz",
-        "sha256": "538d705e271e07a98b920cba84f1a08b018a4f636da216cb93371c0f88865361",
-        "size": 316428052
+        "sha256": "c67549857b7741e5f2c809e701c6f5cfcacb971fe4a76ad166fecb7b2d4a9d74",
+        "size": 296674820
       }
     }
   },
@@ -75,7 +75,7 @@
   "news": [
     {
       "id": 2,
-      "title": "Stryker 6.0 — Rootless engine & Debian",
+      "title": "Stryker 6.0 - Rootless engine & Debian",
       "description": "The full toolset now runs without root: Stryker boots an arm64 QEMU virtual machine and routes tools into the guest. The chroot moved from Alpine to Debian trixie, the same rootfs the VM boots. Also new: a root-free network scanner (mDNS, SSDP, NetBIOS, SNMP), Cameradar RTSP discovery, a reworked dashboard and VM settings. RouterScan has been removed. arm64-v8a only.",
       "newsDate": "2026-08-09",
       "newsUrl": "https://github.com/zalexdev/strykerapp/releases/tag/v6.0",
@@ -122,23 +122,23 @@
     },
     "kernel": {
       "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/Image",
-      "sha256": "fa113309e6c26fd34dd05f38f4b6f42c8a184348534b3ad9f8db281db922becd",
-      "size": 27881480
+      "sha256": "80b5fd85c1280e11fcaee721bbad1781ebc91b0370ea49da6729fcecc8649d24",
+      "size": 28676104
     },
     "initrd": {
       "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/initrd.img",
-      "sha256": "75b04d27e56da8c0f5bb0fe2bef9bcd30abdb0e41f1aff5d26f8260f4dec080d",
-      "size": 13933896
+      "sha256": "30cc3d91d673de371946764678d534eab2e80669e393009915a3785e6e4f4017",
+      "size": 16308339
     },
     "rootfs": {
       "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/rootfs.imgz",
-      "sha256": "8636c383a1a90d769f38b3d8a5419834d053351169009be772e41ae5bbb9ad9d",
-      "size": 319654218
+      "sha256": "dfa844f8b9cebe121b60ecdb4da9c41ffd701430b2c9d0f6bdc90c66d2c26c82",
+      "size": 321664844
     },
     "uml_kernel": {
       "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/linux-uml",
-      "sha256": "ddc07e89350af0d36ccfcc36673b006835e74cf5691d9f4a322cbc7820b72186",
-      "size": 18000888
+      "sha256": "c091ecdabce9bc32b7853ba144d7873711c3f013ea85c5722eab07a0fc4e4bd6",
+      "size": 19763856
     },
     "uml_stub": {
       "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/stub_exe",
