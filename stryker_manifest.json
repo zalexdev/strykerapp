@@ -22,6 +22,16 @@
         "sha256": "bb27ba9f063dc8000eef947db36df1c0b96f1ec56edb36519a24b7f0ec9b030c",
         "size": 237502035
       }
+    },
+    "debian_v2": {
+      "min_version_code": 650,
+      "version": "chroot-debian-trixie-uml",
+      "note": "Debian trixie arm64, same tree as rootless-650. arm64-v8a only.",
+      "chroot64": {
+        "url": "https://github.com/zalexdev/strykerapp/releases/download/chroot-650/chroot64-debian.tar.gz",
+        "sha256": "538d705e271e07a98b920cba84f1a08b018a4f636da216cb93371c0f88865361",
+        "size": 316428052
+      }
     }
   },
   "rootless": {
@@ -94,5 +104,46 @@
       "actionbutton2url": ""
     }
   ],
-  "notifications": []
+  "notifications": [],
+  "rootless_v2": {
+    "min_version_code": 650,
+    "version": "rootless-650",
+    "note": "Kernel 7.2 from the UML port tree; one rootfs for both QEMU and UML. Guest is reached over SSH.",
+    "kernel_release": "7.2.0-rc4-g8897487c5223",
+    "qemu": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-main/qemu-system-aarch64",
+      "sha256": "2a87f531371b3f8d45141d48632e0dbe2c3d968fbcb385ba105d671479fb8c99",
+      "size": 43800304
+    },
+    "libslirp": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-main/libslirp.so",
+      "sha256": "226372426fda32c9fccd8e831d0901a86bfff3c3e6f7a60336d6dde149f756c4",
+      "size": 1145496
+    },
+    "kernel": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/Image",
+      "sha256": "fa113309e6c26fd34dd05f38f4b6f42c8a184348534b3ad9f8db281db922becd",
+      "size": 27881480
+    },
+    "initrd": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/initrd.img",
+      "sha256": "75b04d27e56da8c0f5bb0fe2bef9bcd30abdb0e41f1aff5d26f8260f4dec080d",
+      "size": 13933896
+    },
+    "rootfs": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/rootfs.imgz",
+      "sha256": "8636c383a1a90d769f38b3d8a5419834d053351169009be772e41ae5bbb9ad9d",
+      "size": 319654218
+    },
+    "uml_kernel": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/linux-uml",
+      "sha256": "ddc07e89350af0d36ccfcc36673b006835e74cf5691d9f4a322cbc7820b72186",
+      "size": 18000888
+    },
+    "uml_stub": {
+      "url": "https://github.com/zalexdev/strykerapp/releases/download/rootless-650/stub_exe",
+      "sha256": "83f51f7c45133daa135b595562b09c5e2829f1d0f1e00b7fce2a7695370781fc",
+      "size": 1920
+    }
+  }
 }
