@@ -1204,7 +1204,7 @@ Storage is only consumed as the guest writes, and space freed inside the VM is r
     <string name="delete_app_item_app">•  Stryker itself</string>
     <string name="delete_app_removing">Removing Stryker…</string>
     <string name="delete_app_step_unmount">Unmounting environment</string>
-    <string name="delete_app_step_wipe">Wiping /data/local/stryker</string>
+    <string name="delete_app_step_wipe">Wiping /data/stryker</string>
     <string name="delete_app_step_uninstall">Uninstalling app</string>
     <string name="delete_app_fail">Couldn\'t unmount — close anything using the chroot and try again</string>
     <string name="delete_app_close">Close</string>

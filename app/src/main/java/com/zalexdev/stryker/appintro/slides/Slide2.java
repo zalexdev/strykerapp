@@ -145,7 +145,7 @@ public class Slide2 extends Fragment {
                 uiSafe(() -> {
                     refreshStatuses();
                     if (rooted) {
-                        boolean alreadyInstalled = core.checkFolder("/data/local/stryker/release/sdcard/Stryker")
+                        boolean alreadyInstalled = core.checkFolder("/data/stryker/release/sdcard/Stryker")
                                 && core.checkFile(Core.CHROOT_MARKER);
                         if (alreadyInstalled) {
                             ((AppIntroActivity) activity).jumpToLast();

@@ -170,7 +170,7 @@ public class Slide3 extends Fragment {
                 runOnUi(() -> downloadBlock.setVisibility(View.GONE));
 
                 markStage(InstallStage.UNPACKING, RowState.ACTIVE);
-                log(LogLevel.STEP, "Extracting archive into /data/local/stryker");
+                log(LogLevel.STEP, "Extracting archive into /data/stryker");
                 log(LogLevel.INFO, "Full Debian rootfs — extraction can take several minutes");
                 runOnUi(() -> progress.setIndeterminate(true));
 
@@ -204,8 +204,8 @@ public class Slide3 extends Fragment {
                     }
                     core.deleteFile("/sdcard/Stryker/exploits/");
                     core.copyFile("/data/data/com.zalexdev.stryker/files/checker.py",
-                            "/data/local/stryker/release/exploits/checker.py");
-                    core.copyFile("/data/local/stryker/release/exploits/", "/sdcard/Stryker/exploits");
+                            "/data/stryker/release/exploits/checker.py");
+                    core.copyFile("/data/stryker/release/exploits/", "/sdcard/Stryker/exploits");
                     core.chmodFolder("/data/data/com.zalexdev.stryker/files");
                     markStage(InstallStage.DEPLOYING_EXPLOITS, RowState.DONE);
                     log(LogLevel.SUCCESS, "Exploits deployed to /sdcard/Stryker/exploits");
@@ -348,7 +348,7 @@ public class Slide3 extends Fragment {
     private boolean clear() {
         core.chmodFolder("/data/data/com.zalexdev.stryker/files/");
         core.createFolder(core.getStorage() + "/Stryker/");
-        core.createFolder("/data/local/stryker");
+        core.createFolder("/data/stryker");
         // Any live mount under the chroot root counts, not just a fully assembled one: a chroot
         // from before 4.5R binds the whole /sdcard inside itself, and both the extract below and
         // purgeChroot would otherwise run straight across it into the user's real storage.
@@ -388,9 +388,9 @@ public class Slide3 extends Fragment {
             extractFailure = core.tarFailureReason();
             return false;
         }
-        log(LogLevel.CMD, tar + " -xzf " + DOWNLOADED_CHROOT_PATH + " -C /data/local/stryker/");
+        log(LogLevel.CMD, tar + " -xzf " + DOWNLOADED_CHROOT_PATH + " -C /data/stryker/");
         ArrayList<String> out = core.customCommand(
-                tar + " -xzf " + DOWNLOADED_CHROOT_PATH + " -C /data/local/stryker/ 2>&1"
+                tar + " -xzf " + DOWNLOADED_CHROOT_PATH + " -C /data/stryker/ 2>&1"
                         + "; echo " + TAR_RC + "$?", 0);
 
         Integer rc = null;

@@ -94,7 +94,7 @@ public class Core {
     public final static String EXECUTE = "/data/data/com.zalexdev.stryker/files/chroot_exec ";
     public final static String BUSYBOX = "/data/data/com.zalexdev.stryker/files/busybox ";
     public final static String SHELL = "bash";
-    public final static String CHROOT_ROOT = "/data/local/stryker/release";
+    public final static String CHROOT_ROOT = "/data/stryker/release";
 
     /** Marker written after a successful chroot install. The name IS the rootfs generation:
      *  "4.0" is the old Alpine tree, "6.0" the Debian one. */
@@ -824,7 +824,7 @@ public class Core {
         return proc && sys && dev && sdcard;
     }
     public boolean isOldMounted(){
-        return checkFolder("/data/local/stryker/beta/sdcard/Stryker");
+        return checkFolder("/data/stryker/beta/sdcard/Stryker");
     }
     public boolean ping(String ip, int port,int timeout) {
         try {

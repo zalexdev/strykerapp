@@ -557,7 +557,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         new Thread(() -> {
-            if (!core.checkFolder("/data/local/stryker/release/usr")) {
+            if (!core.checkFolder("/data/stryker/release/usr")) {
                 launchRunning = false;
                 Intent install = new Intent(this, AppIntroActivity.class);
                 install.putExtra("update", false);

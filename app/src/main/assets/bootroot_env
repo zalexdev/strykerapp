@@ -25,7 +25,7 @@ for helper in chroot_exec bash_exec bootroot killroot; do
 done
 
 ## Define chroot path to MNT variable.
-MNT="/data/local/stryker/release"
+MNT="/data/stryker/release"
 
 ## Validate busybox path.
 if [ ! -x "$BUSYBOX" ]; then

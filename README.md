@@ -2,7 +2,7 @@
 
 > A free and open-source mobile pentest suite for Android. Authorized testing only.
 
-StrykerOSS bundles a curated set of network, wireless and web security tools into a single rooted-Android application, exposing them through a unified, modern UI. It runs a Debian trixie (arm64) `chroot` under `/data/local/stryker/release` so heavyweight tools (Nmap, Metasploit, Nuclei, Hydra, SearchSploit, etc.) execute natively on the device — the same rootfs the rootless QEMU VM boots when root is unavailable. A built-in terminal (drawer → **Terminal**, or the **Stryker Terminal** launcher icon) drops straight into that chroot — no external shell app required.
+StrykerOSS bundles a curated set of network, wireless and web security tools into a single rooted-Android application, exposing them through a unified, modern UI. It runs a Debian trixie (arm64) `chroot` under `/data/stryker/release` so heavyweight tools (Nmap, Metasploit, Nuclei, Hydra, SearchSploit, etc.) execute natively on the device — the same rootfs the rootless QEMU VM boots when root is unavailable. A built-in terminal (drawer → **Terminal**, or the **Stryker Terminal** launcher icon) drops straight into that chroot — no external shell app required.
 
 - **Package**: `com.zalexdev.stryker`
 - **Version**: 6.0
@@ -92,7 +92,7 @@ If the variables are not set, the release build is left unsigned so CI / contrib
    - Request root (`su`).
    - Request runtime permissions (storage, location, notifications, Bluetooth, audio).
    - Download and unpack the Debian trixie arm64 `chroot` core (`chroot64-debian.tar.gz`).
-   - Mount the chroot at `/data/local/stryker/release`.
+   - Mount the chroot at `/data/stryker/release`.
    - Install optional components (Metasploit, Nuclei, Hydra, SearchSploit).
 3. Open the built-in terminal (drawer → **Terminal**) for a shell straight into the chroot.
 4. Plug in a supported USB Wi-Fi adapter for monitor-mode features.

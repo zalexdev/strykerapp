@@ -86,7 +86,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Debian toolset live at /data/local/stryker/release"
+                        android:text="Debian toolset live at /data/stryker/release"
                         android:textColor="@color/grey"
                         android:textSize="12sp" />
                 </LinearLayout>
