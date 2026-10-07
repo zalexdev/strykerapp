@@ -77,7 +77,7 @@ public class BruteHandshake extends AsyncTask<Void, String, WiFINetwork> {
         logger.writeLine("Starting brute handshake",1);
         try {
             if (core.isRootless()) {
-                String guestCmd = "aircrack-ng -w " + wordlist + " " + guestCapture() + " ";
+                String guestCmd = "aircrack-ng -w " + WordlistStore.quoteForShell(wordlist) + " " + guestCapture() + " ";
                 guestSession = core.guest().openStream(guestCmd);
                 BufferedReader gbr = guestSession.reader;
                 while ((line = gbr.readLine()) != null) {
