@@ -63,7 +63,7 @@ CLAUDE.md
 .claude/
 
 /app/src/main/assets/rootless/*
-!/app/src/main/assets/rootless/stryker-guest-core.tar
+!/app/src/main/assets/rootless/stryker-guest-core.tar.enc
 
 /rootless/build-rootfs/out/
 /rootless/build-rootfs/out-minimal/

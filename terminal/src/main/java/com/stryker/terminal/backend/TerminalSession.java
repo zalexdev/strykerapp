@@ -72,6 +72,8 @@ public class TerminalSession extends TerminalOutput {
 
   private int mTerminalFileDescriptor;
 
+  private boolean mNativeUnavailable;
+
   private boolean mSockMode;
   private java.io.Closeable mConn;
   private static final int SOCK_ALIVE_PID = 0x7FFF0000;
@@ -162,7 +164,7 @@ public class TerminalSession extends TerminalOutput {
       RemoteShell remote = mRemote;
       if (remote != null) {
         remote.resize(columns, rows);
-      } else if (!mSockMode) {
+      } else if (!mSockMode && !mNativeUnavailable) {
         JNI.setPtyWindowSize(mTerminalFileDescriptor, rows, columns);
       }
       mEmulator.resize(columns, rows);
@@ -188,6 +190,11 @@ public class TerminalSession extends TerminalOutput {
     if (mShellPath != null && (mShellPath.startsWith("tcp:") || mShellPath.startsWith("pty:")
         || mShellPath.startsWith("ssh:") || mShellPath.startsWith("unix:"))) {
       initializeSocket();
+      return;
+    }
+
+    if (!JNI.isAvailable()) {
+      reportNativeUnavailable();
       return;
     }
 
@@ -235,6 +242,19 @@ public class TerminalSession extends TerminalOutput {
         mMainThreadHandler.sendMessage(mMainThreadHandler.obtainMessage(MSG_PROCESS_EXITED, processExitCode));
       }
     }.start();
+  }
+
+  private void reportNativeUnavailable() {
+    mNativeUnavailable = true;
+    mShellPid = SOCK_ALIVE_PID;
+    StrykerLog.e(EmulatorDebug.LOG_TAG, "libterminal.so failed to load: " + JNI.loadError());
+    byte[] msg = ("\r\n[Terminal engine unavailable: " + JNI.loadError() + "]"
+        + "\r\n[Reinstall Stryker; if it persists report this at "
+        + "github.com/zalexdev/strykerapp/issues]\r\n")
+        .getBytes(StandardCharsets.UTF_8);
+    mProcessToTerminalIOQueue.write(msg, 0, msg.length);
+    mMainThreadHandler.sendEmptyMessage(MSG_NEW_INPUT);
+    mMainThreadHandler.sendMessage(mMainThreadHandler.obtainMessage(MSG_PROCESS_EXITED, 0));
   }
 
   private void initializeSocket() {
@@ -380,7 +400,7 @@ public class TerminalSession extends TerminalOutput {
 
   public void finishIfRunning() {
     if (isRunning()) {
-      if (mSockMode) {
+      if (mSockMode || mNativeUnavailable) {
         try { if (mConn != null) mConn.close(); } catch (Exception ignored) {}
         return;
       }
@@ -414,7 +434,7 @@ public class TerminalSession extends TerminalOutput {
     mProcessToTerminalIOQueue.close();
     if (mSockMode) {
       try { if (mConn != null) mConn.close(); } catch (Exception ignored) {}
-    } else {
+    } else if (!mNativeUnavailable) {
       JNI.close(mTerminalFileDescriptor);
     }
   }

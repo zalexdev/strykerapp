@@ -36,7 +36,7 @@ their licenses in the in-app *About → Open-source licenses* screen.
 | `checker.py` | CVE-2022-27255 PoC — [infobyte/cve-2022-27255](https://github.com/infobyte/cve-2022-27255) (© Martin Tartarelli, Octavio Gianatiempo) | upstream PoC | Attribution preserved in file header. |
 | Fonts: `SourceCodePro.ttf`, `ZedMono*.ttf`, `UbuntuMono.ttf`, `eks_font.ttf` | Adobe Source Code Pro; be5invis Iosevka/Zed Mono; Canonical Ubuntu Mono; Google Noto | **OFL-1.1** / **UFL-1.0** | License texts retained; OFL Reserved Font Names respected. |
 
-## Guest-core payload (`assets/rootless/stryker-guest-core.tar`)
+## Guest-core payload (`assets/rootless/stryker-guest-core.tar.enc`)
 
 Unpacked into the Linux environment at first boot. Each tool runs as a separate program
 inside the guest and is aggregated with, not linked into, Stryker.

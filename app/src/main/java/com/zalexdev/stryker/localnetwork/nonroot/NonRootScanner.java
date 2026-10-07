@@ -137,6 +137,11 @@ public final class NonRootScanner {
             }
             status("Scanning " + net.range.cidr());
             log("Non-root discovery: " + net.describe());
+            if (override != null && !override.trim().isEmpty() && !net.inRange(net.localIp)) {
+                log("Scan target " + net.range.cidr() + " does not contain this device ("
+                        + net.localIp + "), so only hosts the router routes to can answer. "
+                        + "Clear the manual target to scan the subnet you are on.");
+            }
             refreshArp();
             if (!arp.isEmpty()) log("Neighbour table readable: " + arp.size() + " entries");
             else if (!Neighbours.isAvailable()) log("Neighbour lookup unavailable, IP-only mode");

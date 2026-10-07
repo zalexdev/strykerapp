@@ -63,9 +63,80 @@ public final class UmlEngine implements GuestEngine {
             File d = new File(candidate);
             if (d.isDirectory() && d.canWrite()) return null;
         }
+        String shm = writableTmpfs();
+        if (shm != null) return shm;
         File tmp = tempDir();
         tmp.mkdirs();
         return tmp.isDirectory() ? tmp.getAbsolutePath() : null;
+    }
+
+    private static String writableTmpfs() {
+        for (String[] m : mounts()) {
+            if (!"tmpfs".equals(m[1])) continue;
+            File d = new File(m[0]);
+            if (!d.isDirectory() || !d.canWrite()) continue;
+            File probe = new File(d, "stryker-uml");
+            if (probe.isDirectory() || probe.mkdirs()) return probe.getAbsolutePath();
+        }
+        return null;
+    }
+
+    private static List<String[]> mounts() {
+        List<String[]> out = new ArrayList<>();
+        java.io.BufferedReader r = null;
+        try {
+            r = new java.io.BufferedReader(new java.io.FileReader("/proc/mounts"));
+            String line;
+            while ((line = r.readLine()) != null) {
+                String[] f = line.split(" ");
+                if (f.length >= 3) out.add(new String[]{f[1], f[2]});
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (r != null) try { r.close(); } catch (Exception ignored) {}
+        }
+        return out;
+    }
+
+    private static String fsTypeOf(String path) {
+        String type = null;
+        int best = -1;
+        for (String[] m : mounts()) {
+            String mount = m[0];
+            String prefix = mount.endsWith("/") ? mount : mount + "/";
+            if (!path.equals(mount) && !path.startsWith(prefix)) continue;
+            if (mount.length() > best) {
+                best = mount.length();
+                type = m[1];
+            }
+        }
+        return type;
+    }
+
+    String memoryBackingHint() {
+        String dir = fallbackTempDir();
+        if (dir == null) {
+            for (String v : new String[]{"TMPDIR", "TMP", "TEMP"}) {
+                String value = System.getenv(v);
+                if (value != null && !value.trim().isEmpty() && new File(value).isDirectory()) {
+                    dir = value;
+                    break;
+                }
+            }
+        }
+        if (dir == null) {
+            for (String c : new String[]{"/dev/shm", "/tmp"}) {
+                File d = new File(c);
+                if (d.isDirectory() && d.canWrite()) { dir = c; break; }
+            }
+        }
+        if (dir == null) return null;
+        String type = fsTypeOf(dir);
+        if ("tmpfs".equals(type)) return null;
+        return "the kernel backs guest memory with a file in " + dir + ", which is on "
+                + (type == null ? "a filesystem" : type) + " rather than tmpfs, and only tmpfs "
+                + "supports MADV_REMOVE. This device gives apps no writable tmpfs, so UML cannot "
+                + "run here; the QEMU engine does not need it.";
     }
 
     public File rootfs() { return RootlessPaths.rootfs(app); }
@@ -158,6 +229,8 @@ public final class UmlEngine implements GuestEngine {
     private volatile UmlUsb usb;
     private volatile boolean usbDriverOk;
 
+    private static final long WLAN_APPEAR_TIMEOUT_MS = 45_000;
+
     @Override
     public GuestUsb usb() {
         UmlUsb u = usb;
@@ -191,7 +264,7 @@ public final class UmlEngine implements GuestEngine {
             GuestExec.logToStore("USB adapters: " + count + " of " + candidates
                     + " passed into the guest");
         }
-        return awaitGuestWlan(10_000, count);
+        return awaitGuestWlan(WLAN_APPEAR_TIMEOUT_MS, count);
     }
 
     @Override
@@ -206,7 +279,7 @@ public final class UmlEngine implements GuestEngine {
             ifs = GuestExec.wirelessInterfaces();
             if (ifs.size() >= Math.max(expected, 1)) break;
             if (System.currentTimeMillis() >= deadline) break;
-            try { Thread.sleep(500); } catch (InterruptedException e) { return false; }
+            try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
         }
         if (ifs.isEmpty()) {
             usbDriverOk = false;
@@ -462,6 +535,10 @@ public final class UmlEngine implements GuestEngine {
     }
 
     private boolean fail(BootListener listener, String reason) {
+        if (reason != null && reason.contains("MADV_REMOVE")) {
+            String hint = memoryBackingHint();
+            if (hint != null) reason = reason + " — " + hint;
+        }
         lastError = reason;
         StrykerLog.w(TAG, "boot failed: " + reason);
         GuestExec.logToStore("UML engine: " + reason);

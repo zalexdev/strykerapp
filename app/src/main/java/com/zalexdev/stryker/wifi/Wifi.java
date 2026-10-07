@@ -187,6 +187,8 @@ public class Wifi extends Fragment {
         return view;
     }
 
+    private static final int IFACE_WAIT_TRIES = 60;
+
     public void scan() {
         if (context == null) return;
         fab.hide();
@@ -231,7 +233,7 @@ public class Wifi extends Fragment {
                     boolean up = false;
                     String target = core.getString("wlan_wifi");
                     ArrayList<String> ifs = new ArrayList<>();
-                    for (int i = 0; i < 20 && alive.get(); i++) {
+                    for (int i = 0; i < IFACE_WAIT_TRIES && alive.get(); i++) {
                         ifs = core.getInterfacesList();
                         if (ifs.contains(target)) { up = true; break; }
                         if (ifs.contains(target + "mon")) { target = target + "mon"; up = true; break; }

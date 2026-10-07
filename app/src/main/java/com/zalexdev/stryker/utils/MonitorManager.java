@@ -46,17 +46,42 @@ public class MonitorManager {
         return ifc != null && ifc.matches("(wlan0|swlan0)(mon)?");
     }
 
+    private String baseOf(String ifc){
+        return (ifc != null && ifc.endsWith("mon")) ? ifc.substring(0, ifc.length() - 3) : ifc;
+    }
+
+    private String monitorInterfaceFor(String ifc){
+        if (ifc == null || ifc.isEmpty()) return null;
+        String base = baseOf(ifc);
+        for (String[] p : listInterfaces()){
+            if (!p[1].contains("monitor")) continue;
+            if (p[0].equals(ifc) || p[0].equals(base) || p[0].equals(base + "mon")) return p[0];
+        }
+        return null;
+    }
+
+    private boolean forceManaged(String ifc){
+        core.customChrootCommand("ip link set " + ifc + " down 2>/dev/null; "
+                + "iw dev " + ifc + " set type managed 2>/dev/null; "
+                + "ip link set " + ifc + " up 2>/dev/null");
+        return monitorInterfaceFor(ifc) == null;
+    }
+
     public boolean disableMonitorMode(String interfaceName){
         if (core.isRootless()) {
             return disableMonitorModeRootless(interfaceName);
         }
         logger.writeLine("Disabling monitor mode on interface: " + interfaceName,1);
-        core.customChrootCommand(getDisableCommand(interfaceName));
-        boolean stillMon = isMonitorModeEnabled(interfaceName)
-                || isMonitorModeEnabled(interfaceName + "mon");
+        String mon = monitorInterfaceFor(interfaceName);
+        core.customChrootCommand(getDisableCommand(mon != null ? mon : interfaceName));
+        String left = monitorInterfaceFor(interfaceName);
+        boolean stillMon = left != null && !forceManaged(left);
         if (isInternalRadio(interfaceName)) {
-            String base = interfaceName.replace("mon", "");
+            String base = baseOf(interfaceName);
             core.customCommand("ip link set " + base + " up; svc wifi enable");
+        }
+        if (stillMon) {
+            logger.writeLine("Interface " + interfaceName + " is still in monitor mode", 3);
         }
         return !stillMon;
     }
@@ -123,12 +148,19 @@ public class MonitorManager {
 
     private boolean disableMonitorModeRootless(String ifc){
         logger.writeLine("Disabling monitor mode (rootless) on interface: " + ifc, 1);
-        core.customChrootCommand("airmon-ng stop " + ifc + " 2>/dev/null; "
-                + "ip link set " + ifc + " down 2>/dev/null; "
-                + "iw dev " + ifc + " set type managed 2>/dev/null; "
-                + "ip link set " + ifc + " up 2>/dev/null");
-        boolean stillMon = isMonitorModeEnabled(ifc);
-        if (stillMon) stillMon = isMonitorModeEnabled(ifc + "mon");
+        String base = baseOf(ifc);
+        String mon = monitorInterfaceFor(ifc);
+        String target = mon != null ? mon : ifc;
+        core.customChrootCommand("airmon-ng stop " + target + " 2>/dev/null; "
+                + "ip link set " + target + " down 2>/dev/null; "
+                + "iw dev " + target + " set type managed 2>/dev/null; "
+                + "ip link set " + target + " up 2>/dev/null; "
+                + "ip link set " + base + " up 2>/dev/null");
+        String left = monitorInterfaceFor(ifc);
+        boolean stillMon = left != null && !forceManaged(left);
+        if (stillMon) {
+            logger.writeLine("Interface " + ifc + " is still in monitor mode", 3);
+        }
         return !stillMon;
     }
 

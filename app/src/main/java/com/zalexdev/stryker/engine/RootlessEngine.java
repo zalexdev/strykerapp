@@ -43,6 +43,8 @@ public final class RootlessEngine implements GuestEngine {
     private volatile File shareInUse;
     private volatile boolean shareActive;
     private volatile boolean usbDriverOk;
+
+    private static final long WLAN_APPEAR_TIMEOUT_MS = 45_000;
     private final Object bootMarkLock = new Object();
     private volatile String lastError = "";
     private volatile String guestPrompt = "";
@@ -700,7 +702,6 @@ public final class RootlessEngine implements GuestEngine {
 
 
     private static final String CORE_MARKER = "/CORE/PixieWps/pixie.py";
-    private static final String CORE_ASSET = "rootless/stryker-guest-core.tar";
     private static final String STAGED_CORE = ".stryker-guest-core.tar";
 
     private GuestEngine guestInUse() {
@@ -729,14 +730,7 @@ public final class RootlessEngine implements GuestEngine {
 
     private java.io.File stageGuestCore(java.io.File shareDir) throws java.io.IOException {
         java.io.File staged = new java.io.File(shareDir, STAGED_CORE);
-        try (java.io.InputStream in = app.getAssets().open(CORE_ASSET);
-             java.io.FileOutputStream out = new java.io.FileOutputStream(staged)) {
-            byte[] buf = new byte[1 << 16];
-            int r;
-            while ((r = in.read(buf)) != -1) out.write(buf, 0, r);
-            out.flush();
-            out.getFD().sync();
-        }
+        GuestCorePackage.extractTo(app, staged);
         return staged;
     }
 
@@ -813,13 +807,28 @@ public final class RootlessEngine implements GuestEngine {
         return false;
     }
 
+    private static final int AGENT_PORT_TRIES = 40;
+
+    private static final String AGENT_PORT_PROBE =
+            "{ ss -ltn 2>/dev/null || netstat -ltn 2>/dev/null; } | grep -q ':1052' "
+            + "&& echo __UP__ || echo __NO__";
+
+    private static final String PTYD_STATUS = "/tmp/stryker-ptyd.status";
+
+    private String guestAgentPortReason() {
+        for (String l : GuestExec.run("cat " + PTYD_STATUS + " 2>/dev/null")) {
+            if (l != null && !l.trim().isEmpty()) return l.trim();
+        }
+        return "the agent left no status, so it probably never ran";
+    }
+
     private void restartGuestAgent() {
         GuestExec.run("(systemctl restart stryker-agent.service >/dev/null 2>&1 "
                 + "|| (pkill -f stryker-agentd >/dev/null 2>&1; "
+                + "pkill -f stryker-ptyd >/dev/null 2>&1; "
                 + "setsid /usr/local/sbin/stryker-agentd >/dev/null 2>&1 &)) &");
-        for (int i = 0; i < 20; i++) {
-            for (String l : GuestExec.run(
-                    "ss -ltn 2>/dev/null | grep -q ':1052' && echo __UP__ || echo __NO__")) {
+        for (int i = 0; i < AGENT_PORT_TRIES; i++) {
+            for (String l : GuestExec.run(AGENT_PORT_PROBE)) {
                 if (l != null && l.trim().equals("__UP__")) return;
             }
             try { Thread.sleep(500); } catch (InterruptedException e) {
@@ -827,7 +836,9 @@ public final class RootlessEngine implements GuestEngine {
                 return;
             }
         }
-        StrykerLog.w(TAG, "guest agent restarted but port 1052 never came up");
+        String why = guestAgentPortReason();
+        StrykerLog.w(TAG, "guest agent restarted but port 1052 never came up: " + why);
+        GuestExec.logToStore("guest agent: port 1052 never came up — " + why);
     }
 
     @Override
@@ -844,7 +855,7 @@ public final class RootlessEngine implements GuestEngine {
         if (candidates > 1) {
             GuestExec.logToStore("USB adapters: " + count + " of " + candidates + " passed into the VM");
         }
-        return awaitGuestWlan(10_000, count);
+        return awaitGuestWlan(WLAN_APPEAR_TIMEOUT_MS, count);
     }
 
     public java.util.List<String> guestWifiInterfaces() {
@@ -867,7 +878,7 @@ public final class RootlessEngine implements GuestEngine {
             ifs = guestWlanInterfaces();
             if (ifs.size() >= Math.max(expected, 1)) break;
             if (System.currentTimeMillis() >= deadline) break;
-            try { Thread.sleep(500); } catch (InterruptedException e) { return false; }
+            try { Thread.sleep(1000); } catch (InterruptedException e) { return false; }
         }
         if (ifs.isEmpty()) {
             usbDriverOk = false;

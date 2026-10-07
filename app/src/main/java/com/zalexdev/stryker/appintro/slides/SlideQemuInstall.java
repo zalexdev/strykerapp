@@ -115,6 +115,12 @@ public class SlideQemuInstall extends Fragment implements IntroPage {
 
 
     private static final long BOOT_DEADLINE_MS = 200_000;
+    private static final long BOOT_HARD_DEADLINE_MS = 600_000;
+    private static final long BOOT_STALL_MS = 60_000;
+    private static final long BOOT_POLL_MS = 500;
+
+    private final java.util.concurrent.atomic.AtomicLong lastBootLine =
+            new java.util.concurrent.atomic.AtomicLong();
 
     private static final long READY_CONFIRM_MS = 20_000;
 
@@ -317,15 +323,24 @@ public class SlideQemuInstall extends Fragment implements IntroPage {
                 "engine-boot");
         boot.setDaemon(true);
         boot.start();
+        long started = System.currentTimeMillis();
+        lastBootLine.set(started);
         try {
-            boot.join(BOOT_DEADLINE_MS);
+            while (boot.isAlive()) {
+                long now = System.currentTimeMillis();
+                long elapsed = now - started;
+                if (elapsed >= BOOT_HARD_DEADLINE_MS) break;
+                if (elapsed >= BOOT_DEADLINE_MS
+                        && now - lastBootLine.get() >= BOOT_STALL_MS) break;
+                boot.join(BOOT_POLL_MS);
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
         if (boot.isAlive()) {
             log(LogLevel.ERROR, engine.displayName() + " did not finish booting within "
-                    + (BOOT_DEADLINE_MS / 1000) + "s");
+                    + ((System.currentTimeMillis() - started) / 1000) + "s");
             forceStop(engine);
             return false;
         }
@@ -397,6 +412,7 @@ public class SlideQemuInstall extends Fragment implements IntroPage {
     private GuestEngine.BootListener bootListener() {
         return new GuestEngine.BootListener() {
             @Override public void onBootLine(String line) {
+                lastBootLine.set(System.currentTimeMillis());
                 if (line != null && (line.contains("stryker") || line.contains("login")
                         || line.contains("Kernel panic") || line.contains("error"))) {
                     log(LogLevel.INFO, line);
