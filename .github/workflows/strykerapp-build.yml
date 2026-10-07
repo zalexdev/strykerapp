@@ -1,4 +1,4 @@
-name: Build StrykerOSS APK
+name: Build StrykerOSS APK (Signed)
 
 on:
   workflow_dispatch:  # Manual trigger
@@ -23,14 +23,27 @@ jobs:
           SDKMANAGER="${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
           yes | "$SDKMANAGER" "platforms;android-33" "build-tools;34.0.0" "ndk;25.1.8937393" "cmake;3.22.1"
 
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/hawx.keystore
+          # Validate keystore
+          keytool -list -keystore /tmp/hawx.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.KEY_ALIAS }}" || (echo "KEYSTORE INVALID - cek lagi copy-paste base64-nya" && exit 1)
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build Signed Release APK
+        run: |
+          ./gradlew assembleRelease --stacktrace \
+            -PSTRYKER_RELEASE_STORE_FILE=/tmp/hawx.keystore \
+            -PSTRYKER_RELEASE_STORE_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -PSTRYKER_RELEASE_KEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -PSTRYKER_RELEASE_KEY_PASSWORD="${{ secrets.KEYSTORE_PASSWORD }}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: strykeross-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: strykeross-signed-apk
+          path: app/build/outputs/apk/release/*.apk
