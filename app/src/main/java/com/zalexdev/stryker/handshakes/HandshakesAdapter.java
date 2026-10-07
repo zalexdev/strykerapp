@@ -300,7 +300,7 @@ public class HandshakesAdapter extends RecyclerView.Adapter<HandshakesAdapter.Vi
 
         new Thread(() -> {
             try {
-                String wordlistPath = new WordlistStore(core).reachablePathQuoted(wordlist);
+                String wordlistPath = new WordlistStore(core).reachablePath(wordlist);
                 if (wordlistPath == null) {
                     activity.runOnUiThread(() -> {
                         h.progress.setText(activity.getString(
