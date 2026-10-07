@@ -83,6 +83,15 @@ public class WordlistStore {
         return null;
     }
 
+    public String reachablePath(Wordlist wl) {
+    String quoted = reachablePathQuoted(wl);
+    if (quoted != null && quoted.length() >= 2
+        && quoted.startsWith("\"") && quoted.endsWith("\"")) {
+        return quoted.substring(1, quoted.length() - 1);
+    }
+    return quoted;
+    }
+    
     private java.util.List<String> candidates(String name) {
         java.util.LinkedHashSet<String> dirs = new java.util.LinkedHashSet<>();
         dirs.add(core.guestShare() + "/wordlists");
