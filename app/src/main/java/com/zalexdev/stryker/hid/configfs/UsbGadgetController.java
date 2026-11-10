@@ -71,7 +71,10 @@ public final class UsbGadgetController {
         String msFile = exists && linked.contains(GadgetFunction.MASS_STORAGE)
                 ? read(GADGET_BASE + "/functions/mass_storage.0/lun.0/file").trim()
                 : null;
-        return new GadgetState(exists, bound, bound ? udc : null, linked, msFile);
+        boolean hidNode = (linked.contains(GadgetFunction.HID_KEYBOARD)
+                || linked.contains(GadgetFunction.HID_MOUSE))
+                && pathExists("/dev/hidg0");
+        return new GadgetState(exists, bound, bound ? udc : null, linked, msFile, hidNode);
     }
 
     public boolean prepare(@NonNull GadgetProfile profile) {

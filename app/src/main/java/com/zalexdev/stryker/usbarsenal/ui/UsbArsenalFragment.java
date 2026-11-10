@@ -133,6 +133,9 @@ public class UsbArsenalFragment extends Fragment implements GadgetProfileAdapter
         detail.append("udc=").append(caps.udcName == null ? "—" : caps.udcName)
                 .append(" · configfs=").append(caps.configFsMounted ? "✓" : "✗")
                 .append(" · stryker_gadget=").append(state.strykerGadgetExists ? "✓" : "✗");
+        if (state.exposesHid()) {
+            detail.append(" · hidg0=").append(state.hidNodePresent ? "✓" : "✗");
+        }
         if (!state.linkedFunctions.isEmpty()) {
             detail.append('\n').append("functions=");
             Iterator<GadgetFunction> it = state.linkedFunctions.iterator();
