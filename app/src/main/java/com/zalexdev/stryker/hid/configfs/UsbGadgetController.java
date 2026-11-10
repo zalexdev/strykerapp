@@ -77,9 +77,20 @@ public final class UsbGadgetController {
         return new GadgetState(exists, bound, bound ? udc : null, linked, msFile, hidNode);
     }
 
-    public boolean prepare(@NonNull GadgetProfile profile) {
-        if (!core.checkRoot()) return false;
+    /**
+     * Builds the gadget and its functions. Returns the set of functions that were
+     * actually created and linked into the configuration. A function whose kernel
+     * driver is missing (e.g. {@code usb_f_acm} on kernels built without ACM) is
+     * silently skipped rather than aborting the whole gadget, so a HID+ACM profile
+     * still comes up as HID-only. An empty result means preparation failed (no
+     * root, or none of the requested functions could be created).
+     */
+    @NonNull
+    public EnumSet<GadgetFunction> prepare(@NonNull GadgetProfile profile) {
+        EnumSet<GadgetFunction> created = EnumSet.noneOf(GadgetFunction.class);
+        if (!core.checkRoot()) return created;
         List<String> script = new ArrayList<>();
+        // Structural setup must fully succeed, so keep set -e for this part.
         script.add("set -e");
         script.add("mkdir -p " + sq(GADGET_BASE));
         script.add("mkdir -p " + sq(GADGET_BASE + "/configs/c.1"));
@@ -95,6 +106,10 @@ public final class UsbGadgetController {
                 + sq(GADGET_BASE + "/configs/c.1/strings/0x409/configuration"));
         script.add("echo 120 > " + sq(GADGET_BASE + "/configs/c.1/MaxPower"));
 
+        // Function directories can only be created for drivers the kernel has.
+        // Creating a missing one fails with ENOENT, so drop set -e from here on and
+        // let each unsupported function be skipped individually.
+        script.add("set +e");
         if (profile.functions.contains(GadgetFunction.HID_KEYBOARD)) {
             script.addAll(prepareHidKeyboard());
         }
@@ -116,13 +131,24 @@ public final class UsbGadgetController {
             script.addAll(prepareEcm());
         }
 
+        // Link only the functions whose directory actually came up.
         for (GadgetFunction f : profile.functions) {
+            String fnDir = GADGET_BASE + "/functions/" + f.functionDir;
             String link = GADGET_BASE + "/configs/c.1/" + f.functionDir;
-            script.add("[ -e " + sq(link) + " ] || ln -s "
-                    + sq(GADGET_BASE + "/functions/" + f.functionDir) + " " + sq(link));
+            script.add("if [ -d " + sq(fnDir) + " ] && [ ! -e " + sq(link) + " ]; then "
+                    + "ln -s " + sq(fnDir) + " " + sq(link) + " || true; fi");
         }
 
-        return run(script);
+        run(script);
+
+        // The kernel is the source of truth: a function counts as created only
+        // when its link exists in the configuration.
+        for (GadgetFunction f : profile.functions) {
+            if (pathExists(GADGET_BASE + "/configs/c.1/" + f.functionDir)) {
+                created.add(f);
+            }
+        }
+        return created;
     }
 
     @Nullable
@@ -236,17 +262,24 @@ public final class UsbGadgetController {
         return run(script);
     }
 
-    public boolean apply(@NonNull GadgetProfile profile) {
-        if (!prepare(profile)) {
+    @NonNull
+    public ApplyResult applyProfile(@NonNull GadgetProfile profile) {
+        EnumSet<GadgetFunction> created = prepare(profile);
+        if (created.isEmpty()) {
+            // Nothing the profile asked for is supported by this kernel.
             teardown();
-            return false;
+            return ApplyResult.failure(profile.functions, created);
         }
         String udc = bind();
         if (udc == null) {
             unbind();
-            return false;
+            return ApplyResult.failure(profile.functions, created);
         }
-        return true;
+        return ApplyResult.bound(udc, profile.functions, created);
+    }
+
+    public boolean apply(@NonNull GadgetProfile profile) {
+        return applyProfile(profile).success;
     }
 
     public boolean swapMassStorageImage(String absoluteImagePath,

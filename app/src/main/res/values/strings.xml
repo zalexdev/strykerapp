@@ -1230,6 +1230,8 @@ manager</string>
     <string name="arsenal_mass_cdrom">Emulate CD-ROM</string>
     <string name="arsenal_mass_inquiry">Inquiry string (28 ASCII)</string>
     <string name="arsenal_apply_ok">Profile applied — gadget bound to %s</string>
+    <string name="arsenal_apply_partial">Applied without %1$s — this kernel has no driver for it</string>
+    <string name="arsenal_apply_unsupported">Can\'t apply: %1$s not supported by this kernel</string>
     <string name="arsenal_apply_failed">Failed to apply profile (check logcat)</string>
     <string name="arsenal_restore_ok">Vendor gadget restored</string>
     <string name="arsenal_keep_adb_label">Keep ADB over Wi-Fi (TCP 5555)</string>

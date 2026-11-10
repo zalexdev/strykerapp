@@ -20,6 +20,7 @@ import com.google.android.material.textview.MaterialTextView;
 import com.zalexdev.stryker.R;
 import com.zalexdev.stryker.hid.capability.HidCapabilities;
 import com.zalexdev.stryker.hid.capability.HidCapabilityProbe;
+import com.zalexdev.stryker.hid.configfs.ApplyResult;
 import com.zalexdev.stryker.hid.configfs.GadgetFunction;
 import com.zalexdev.stryker.hid.configfs.GadgetProfile;
 import com.zalexdev.stryker.hid.configfs.GadgetState;
@@ -29,6 +30,7 @@ import com.zalexdev.stryker.utils.Core;
 
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Set;
 
 public class UsbArsenalFragment extends Fragment implements GadgetProfileAdapter.Callbacks {
 
@@ -156,19 +158,49 @@ public class UsbArsenalFragment extends Fragment implements GadgetProfileAdapter
         statePill.setBackgroundResource(R.drawable.chip_pill_warn);
         statePill.setTextColor(0xFFEF6C00);
         new Thread(() -> {
-            boolean teardownOk = controller.teardown();
-            boolean ok = controller.apply(profile);
+            controller.teardown();
+            ApplyResult result = controller.applyProfile(profile);
             GadgetState state = controller.readState();
             HidCapabilities caps = new HidCapabilityProbe(requireContext()).probe();
             requireActivity().runOnUiThread(() -> {
                 bindState(caps, state);
-                if (ok && state.boundUdc != null) {
-                    core.toaster(getString(R.string.arsenal_apply_ok, state.boundUdc));
+                if (result.success && state.boundUdc != null) {
+                    if (result.hasDropped()) {
+                        core.toaster(getString(R.string.arsenal_apply_partial,
+                                functionLabels(result.dropped)));
+                    } else {
+                        core.toaster(getString(R.string.arsenal_apply_ok, state.boundUdc));
+                    }
+                } else if (!result.success && result.active.isEmpty() && result.hasDropped()) {
+                    core.toaster(getString(R.string.arsenal_apply_unsupported,
+                            functionLabels(result.dropped)));
                 } else {
                     core.toaster(getString(R.string.arsenal_apply_failed));
                 }
             });
         }, "arsenal-apply").start();
+    }
+
+    private String functionLabels(@NonNull Set<GadgetFunction> fns) {
+        StringBuilder sb = new StringBuilder();
+        for (GadgetFunction f : fns) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(getString(functionLabelRes(f)));
+        }
+        return sb.toString();
+    }
+
+    private static int functionLabelRes(@NonNull GadgetFunction f) {
+        switch (f) {
+            case HID_KEYBOARD: return R.string.arsenal_function_hid_kbd;
+            case HID_MOUSE:    return R.string.arsenal_function_hid_mouse;
+            case MASS_STORAGE: return R.string.arsenal_function_mass;
+            case RNDIS:        return R.string.arsenal_function_rndis;
+            case ECM:          return R.string.arsenal_function_ecm;
+            case ACM:          return R.string.arsenal_function_acm;
+            case ADB:          return R.string.arsenal_function_adb;
+            default:           return R.string.arsenal_functions_label;
+        }
     }
 
     @Override
