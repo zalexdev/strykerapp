@@ -20,6 +20,23 @@ public final class UsbGadgetController {
     public static final String GADGET_BASE = "/config/usb_gadget/" + GADGET_NAME;
     private static final String VENDOR_GADGET = "/config/usb_gadget/g1";
 
+    // Android init USB property triggers. Standard across AOSP regardless of the
+    // SoC-specific init.*.usb.*.rc file that actually carries them. Setting both
+    // to 0 stops init from re-binding the vendor gadget to the controller right
+    // after adbd restarts (see Bug 2 in the USB Arsenal report).
+    private static final String PROP_SYS_CONFIGFS = "sys.usb.configfs";
+    private static final String PROP_VENDOR_CONFIGFS = "vendor.usb.configfs";
+    private static final String PROP_ADB_TCP_PORT = "service.adb.tcp.port";
+    private static final String ADB_TCP_PORT = "5555";
+
+    // Opt-in: keep ADB reachable over Wi-Fi while our gadget owns the single UDC.
+    // There is only one UDC, so USB-ADB (the vendor gadget) cannot coexist with
+    // the Stryker gadget; this is off by default to avoid silently opening an
+    // unauthenticated network ADB port.
+    public static final String PREF_KEEP_ADB_TCP = "arsenal_keep_adb_tcp";
+    private static final String PREF_SAVED_SYS_CONFIGFS = "arsenal_saved_sys_configfs";
+    private static final String PREF_SAVED_VENDOR_CONFIGFS = "arsenal_saved_vendor_configfs";
+
     private static final String KEYBOARD_DESC_HEX =
             "05010906a101050719e029e71500250175019508810295017508810195057501050819012905910295017503910195067508150025650507190029658100c0";
 
@@ -109,28 +126,97 @@ public final class UsbGadgetController {
     public String bind() {
         String udc = capabilities().udcName;
         if (udc == null) return null;
+
+        // Remember the current trigger-property values so "Restore vendor" can
+        // put them back exactly as they were.
+        rememberOriginalTriggerState();
+
         List<String> script = new ArrayList<>();
+        // 1. Freeze Android's USB property triggers BEFORE touching adbd, so init
+        //    cannot re-bind the vendor gadget to the controller once adbd comes
+        //    back and sets sys.usb.ffs.ready=1 (Bug 2). vendor.usb.configfs must
+        //    go first, otherwise the init counter-trigger resets sys.usb.configfs.
+        script.add("setprop " + PROP_VENDOR_CONFIGFS + " 0");
+        script.add("setprop " + PROP_SYS_CONFIGFS + " 0");
+        // 2. Stop adbd so it releases the ffs.adb file descriptor that pins the
+        //    vendor gadget; without this, unbinding g1 fails with EBUSY (Bug 1).
+        script.add("stop adbd 2>/dev/null || true");
+        script.add("sleep 1");
+        // 3. Unbind the vendor gadget (now succeeds) then bind ours to the UDC.
         script.add("if [ -s " + sq(VENDOR_GADGET + "/UDC") + " ]; then "
                 + "echo > " + sq(VENDOR_GADGET + "/UDC") + " || true; fi");
-        script.add("echo " + sq(udc) + " > " + sq(GADGET_BASE + "/UDC"));
-        script.add("sleep 1");
-        if (run(script)) {
+        script.add("sleep 0.3");
+        script.add("echo " + sq(udc) + " > " + sq(GADGET_BASE + "/UDC") + " || true");
+        script.add("sleep 0.5");
+        // 4. Optionally keep ADB reachable over Wi-Fi (opt-in, default off). The
+        //    single UDC means USB-ADB cannot coexist with our gadget.
+        if (core.getBoolean(PREF_KEEP_ADB_TCP)) {
+            script.add("setprop " + PROP_ADB_TCP_PORT + " " + ADB_TCP_PORT);
+            script.add("start adbd 2>/dev/null || true");
+        }
+        run(script);
+
+        // Authoritative success check: the vendor-gadget unbind and our bind are
+        // best-effort (|| true) so the shell never aborts mid-switch, which means
+        // the shell's exit status says nothing. Read back the UDC and only report
+        // success when our gadget is actually attached to the controller.
+        String actual = read(GADGET_BASE + "/UDC").trim();
+        if (!actual.isEmpty()) {
             chmodHidNodes();
-            return udc;
+            return actual;
         }
         return null;
     }
 
     public boolean unbind() {
         List<String> script = new ArrayList<>();
+        // Detach our gadget (no ffs fd pins it, so this always succeeds).
         script.add("if [ -d " + sq(GADGET_BASE) + " ]; then "
                 + "echo > " + sq(GADGET_BASE + "/UDC") + " || true; fi");
+        script.add("sleep 0.3");
+        // Thaw the init triggers we froze during bind so Android can manage USB
+        // again, restoring their original values (default 1 when never captured).
+        script.add("setprop " + PROP_SYS_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_SYS_CONFIGFS)));
+        script.add("setprop " + PROP_VENDOR_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_VENDOR_CONFIGFS)));
+        // Re-bind the vendor gadget as a fallback for devices whose init triggers
+        // do not fire on their own, then bring adbd back for USB ADB.
         String udc = capabilities().udcName;
         if (udc != null) {
-            script.add("if [ -d " + sq(VENDOR_GADGET) + " ]; then "
+            script.add("if [ -s " + sq(VENDOR_GADGET + "/UDC") + " ]; then : ; "
+                    + "elif [ -d " + sq(VENDOR_GADGET) + " ]; then "
                     + "echo " + sq(udc) + " > " + sq(VENDOR_GADGET + "/UDC") + " || true; fi");
         }
+        script.add("start adbd 2>/dev/null || true");
         return run(script);
+    }
+
+    private void rememberOriginalTriggerState() {
+        rememberTrigger(PREF_SAVED_SYS_CONFIGFS, getprop(PROP_SYS_CONFIGFS));
+        rememberTrigger(PREF_SAVED_VENDOR_CONFIGFS, getprop(PROP_VENDOR_CONFIGFS));
+    }
+
+    private void rememberTrigger(String prefKey, String current) {
+        // Never persist our own frozen "0" as the original; otherwise a second
+        // Apply before a Restore would make us "restore" the frozen value. A real
+        // value (normally "1") is captured; "0"/blank keeps the prior original.
+        if (current != null && !current.isEmpty() && !current.equals("0")) {
+            core.putString(prefKey, current);
+        }
+    }
+
+    private String savedTriggerValue(String prefKey) {
+        String v = core.getString(prefKey);
+        return (v == null || v.isEmpty()) ? "1" : v;
+    }
+
+    private String getprop(String name) {
+        List<String> out = core.customCommand("getprop " + sq(name), true);
+        if (out != null) {
+            for (String line : out) {
+                if (line != null && !line.trim().isEmpty()) return line.trim();
+            }
+        }
+        return "";
     }
 
     public boolean teardown() {

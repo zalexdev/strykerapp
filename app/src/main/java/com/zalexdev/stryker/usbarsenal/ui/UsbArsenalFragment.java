@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textview.MaterialTextView;
 import com.zalexdev.stryker.R;
 import com.zalexdev.stryker.hid.capability.HidCapabilities;
@@ -68,6 +69,11 @@ public class UsbArsenalFragment extends Fragment implements GadgetProfileAdapter
         stateText = v.findViewById(R.id.arsenal_state_text);
         statePill = v.findViewById(R.id.arsenal_state_pill);
         stateDetail = v.findViewById(R.id.arsenal_state_detail);
+
+        SwitchMaterial keepAdbSwitch = v.findViewById(R.id.arsenal_keep_adb_switch);
+        keepAdbSwitch.setChecked(core.getBoolean(UsbGadgetController.PREF_KEEP_ADB_TCP));
+        keepAdbSwitch.setOnCheckedChangeListener((btn, checked) ->
+                core.putBoolean(UsbGadgetController.PREF_KEEP_ADB_TCP, checked));
 
         RecyclerView list = v.findViewById(R.id.arsenal_profile_list);
         list.setLayoutManager(new LinearLayoutManager(requireContext()));
