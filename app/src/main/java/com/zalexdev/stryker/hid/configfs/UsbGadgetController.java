@@ -36,6 +36,11 @@ public final class UsbGadgetController {
     public static final String PREF_KEEP_ADB_TCP = "arsenal_keep_adb_tcp";
     private static final String PREF_SAVED_SYS_CONFIGFS = "arsenal_saved_sys_configfs";
     private static final String PREF_SAVED_VENDOR_CONFIGFS = "arsenal_saved_vendor_configfs";
+    // The adbd TCP port as it was before we switched (often empty or -1), and a
+    // flag marking that we are currently switched, so a second Apply cannot
+    // overwrite the captured originals with our own 5555 / frozen values.
+    private static final String PREF_SAVED_ADB_TCP_PORT = "arsenal_saved_adb_tcp_port";
+    private static final String PREF_SWITCHED = "arsenal_gadget_switched";
 
     private static final String KEYBOARD_DESC_HEX =
             "05010906a101050719e029e71500250175019508810295017508810195057501050819012905910295017503910195067508150025650507190029658100c0";
@@ -207,21 +212,42 @@ public final class UsbGadgetController {
         // again, restoring their original values (default 1 when never captured).
         script.add("setprop " + PROP_SYS_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_SYS_CONFIGFS)));
         script.add("setprop " + PROP_VENDOR_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_VENDOR_CONFIGFS)));
-        // Re-bind the vendor gadget as a fallback for devices whose init triggers
-        // do not fire on their own, then bring adbd back for USB ADB.
+        boolean switched = core.getBoolean(PREF_SWITCHED);
+        if (switched) {
+            // Put adbd's TCP port back exactly as it was. Leaving 5555 behind keeps
+            // adbd listening on the network, which is what keeps Android's "USB
+            // debugging connected" notification on after the cable is unplugged.
+            script.add("setprop " + PROP_ADB_TCP_PORT + " " + sq(core.getString(PREF_SAVED_ADB_TCP_PORT)));
+            // adbd only re-reads the port on start, and a plain start is a no-op
+            // when it is already running in TCP mode, so restart it.
+            script.add("stop adbd 2>/dev/null || true");
+            script.add("sleep 0.5");
+        }
+        script.add("start adbd 2>/dev/null || true");
+        // adbd must be up (ffs ready) before the vendor gadget can bind. init's
+        // property trigger normally rebinds it; wait briefly and, if it did not,
+        // bind it ourselves for devices whose triggers do not fire.
+        script.add("sleep 1");
         String udc = capabilities().udcName;
         if (udc != null) {
             script.add("if [ -s " + sq(VENDOR_GADGET + "/UDC") + " ]; then : ; "
                     + "elif [ -d " + sq(VENDOR_GADGET) + " ]; then "
                     + "echo " + sq(udc) + " > " + sq(VENDOR_GADGET + "/UDC") + " || true; fi");
         }
-        script.add("start adbd 2>/dev/null || true");
-        return run(script);
+        boolean ok = run(script);
+        if (switched) core.putBoolean(PREF_SWITCHED, false);
+        return ok;
     }
 
     private void rememberOriginalTriggerState() {
+        // Already switched by a previous Apply: the live values are ours (frozen
+        // triggers, possibly 5555), so keep the originals captured the first time.
+        if (core.getBoolean(PREF_SWITCHED)) return;
         rememberTrigger(PREF_SAVED_SYS_CONFIGFS, getprop(PROP_SYS_CONFIGFS));
         rememberTrigger(PREF_SAVED_VENDOR_CONFIGFS, getprop(PROP_VENDOR_CONFIGFS));
+        // An empty port is a legitimate original value, so store it as-is.
+        core.putString(PREF_SAVED_ADB_TCP_PORT, getprop(PROP_ADB_TCP_PORT));
+        core.putBoolean(PREF_SWITCHED, true);
     }
 
     private void rememberTrigger(String prefKey, String current) {
