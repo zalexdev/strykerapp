@@ -20,6 +20,28 @@ public final class UsbGadgetController {
     public static final String GADGET_BASE = "/config/usb_gadget/" + GADGET_NAME;
     private static final String VENDOR_GADGET = "/config/usb_gadget/g1";
 
+    // Android init USB property triggers. Standard across AOSP regardless of the
+    // SoC-specific init.*.usb.*.rc file that actually carries them. Setting both
+    // to 0 stops init from re-binding the vendor gadget to the controller right
+    // after adbd restarts (see Bug 2 in the USB Arsenal report).
+    private static final String PROP_SYS_CONFIGFS = "sys.usb.configfs";
+    private static final String PROP_VENDOR_CONFIGFS = "vendor.usb.configfs";
+    private static final String PROP_ADB_TCP_PORT = "service.adb.tcp.port";
+    private static final String ADB_TCP_PORT = "5555";
+
+    // Opt-in: keep ADB reachable over Wi-Fi while our gadget owns the single UDC.
+    // There is only one UDC, so USB-ADB (the vendor gadget) cannot coexist with
+    // the Stryker gadget; this is off by default to avoid silently opening an
+    // unauthenticated network ADB port.
+    public static final String PREF_KEEP_ADB_TCP = "arsenal_keep_adb_tcp";
+    private static final String PREF_SAVED_SYS_CONFIGFS = "arsenal_saved_sys_configfs";
+    private static final String PREF_SAVED_VENDOR_CONFIGFS = "arsenal_saved_vendor_configfs";
+    // The adbd TCP port as it was before we switched (often empty or -1), and a
+    // flag marking that we are currently switched, so a second Apply cannot
+    // overwrite the captured originals with our own 5555 / frozen values.
+    private static final String PREF_SAVED_ADB_TCP_PORT = "arsenal_saved_adb_tcp_port";
+    private static final String PREF_SWITCHED = "arsenal_gadget_switched";
+
     private static final String KEYBOARD_DESC_HEX =
             "05010906a101050719e029e71500250175019508810295017508810195057501050819012905910295017503910195067508150025650507190029658100c0";
 
@@ -54,12 +76,26 @@ public final class UsbGadgetController {
         String msFile = exists && linked.contains(GadgetFunction.MASS_STORAGE)
                 ? read(GADGET_BASE + "/functions/mass_storage.0/lun.0/file").trim()
                 : null;
-        return new GadgetState(exists, bound, bound ? udc : null, linked, msFile);
+        boolean hidNode = (linked.contains(GadgetFunction.HID_KEYBOARD)
+                || linked.contains(GadgetFunction.HID_MOUSE))
+                && pathExists("/dev/hidg0");
+        return new GadgetState(exists, bound, bound ? udc : null, linked, msFile, hidNode);
     }
 
-    public boolean prepare(@NonNull GadgetProfile profile) {
-        if (!core.checkRoot()) return false;
+    /**
+     * Builds the gadget and its functions. Returns the set of functions that were
+     * actually created and linked into the configuration. A function whose kernel
+     * driver is missing (e.g. {@code usb_f_acm} on kernels built without ACM) is
+     * silently skipped rather than aborting the whole gadget, so a HID+ACM profile
+     * still comes up as HID-only. An empty result means preparation failed (no
+     * root, or none of the requested functions could be created).
+     */
+    @NonNull
+    public EnumSet<GadgetFunction> prepare(@NonNull GadgetProfile profile) {
+        EnumSet<GadgetFunction> created = EnumSet.noneOf(GadgetFunction.class);
+        if (!core.checkRoot()) return created;
         List<String> script = new ArrayList<>();
+        // Structural setup must fully succeed, so keep set -e for this part.
         script.add("set -e");
         script.add("mkdir -p " + sq(GADGET_BASE));
         script.add("mkdir -p " + sq(GADGET_BASE + "/configs/c.1"));
@@ -75,6 +111,10 @@ public final class UsbGadgetController {
                 + sq(GADGET_BASE + "/configs/c.1/strings/0x409/configuration"));
         script.add("echo 120 > " + sq(GADGET_BASE + "/configs/c.1/MaxPower"));
 
+        // Function directories can only be created for drivers the kernel has.
+        // Creating a missing one fails with ENOENT, so drop set -e from here on and
+        // let each unsupported function be skipped individually.
+        script.add("set +e");
         if (profile.functions.contains(GadgetFunction.HID_KEYBOARD)) {
             script.addAll(prepareHidKeyboard());
         }
@@ -96,41 +136,142 @@ public final class UsbGadgetController {
             script.addAll(prepareEcm());
         }
 
+        // Link only the functions whose directory actually came up.
         for (GadgetFunction f : profile.functions) {
+            String fnDir = GADGET_BASE + "/functions/" + f.functionDir;
             String link = GADGET_BASE + "/configs/c.1/" + f.functionDir;
-            script.add("[ -e " + sq(link) + " ] || ln -s "
-                    + sq(GADGET_BASE + "/functions/" + f.functionDir) + " " + sq(link));
+            script.add("if [ -d " + sq(fnDir) + " ] && [ ! -e " + sq(link) + " ]; then "
+                    + "ln -s " + sq(fnDir) + " " + sq(link) + " || true; fi");
         }
 
-        return run(script);
+        run(script);
+
+        // The kernel is the source of truth: a function counts as created only
+        // when its link exists in the configuration.
+        for (GadgetFunction f : profile.functions) {
+            if (pathExists(GADGET_BASE + "/configs/c.1/" + f.functionDir)) {
+                created.add(f);
+            }
+        }
+        return created;
     }
 
     @Nullable
     public String bind() {
         String udc = capabilities().udcName;
         if (udc == null) return null;
+
+        // Remember the current trigger-property values so "Restore vendor" can
+        // put them back exactly as they were.
+        rememberOriginalTriggerState();
+
         List<String> script = new ArrayList<>();
+        // 1. Freeze Android's USB property triggers BEFORE touching adbd, so init
+        //    cannot re-bind the vendor gadget to the controller once adbd comes
+        //    back and sets sys.usb.ffs.ready=1 (Bug 2). vendor.usb.configfs must
+        //    go first, otherwise the init counter-trigger resets sys.usb.configfs.
+        script.add("setprop " + PROP_VENDOR_CONFIGFS + " 0");
+        script.add("setprop " + PROP_SYS_CONFIGFS + " 0");
+        // 2. Stop adbd so it releases the ffs.adb file descriptor that pins the
+        //    vendor gadget; without this, unbinding g1 fails with EBUSY (Bug 1).
+        script.add("stop adbd 2>/dev/null || true");
+        script.add("sleep 1");
+        // 3. Unbind the vendor gadget (now succeeds) then bind ours to the UDC.
         script.add("if [ -s " + sq(VENDOR_GADGET + "/UDC") + " ]; then "
                 + "echo > " + sq(VENDOR_GADGET + "/UDC") + " || true; fi");
-        script.add("echo " + sq(udc) + " > " + sq(GADGET_BASE + "/UDC"));
-        script.add("sleep 1");
-        if (run(script)) {
+        script.add("sleep 0.3");
+        script.add("echo " + sq(udc) + " > " + sq(GADGET_BASE + "/UDC") + " || true");
+        script.add("sleep 0.5");
+        // 4. Optionally keep ADB reachable over Wi-Fi (opt-in, default off). The
+        //    single UDC means USB-ADB cannot coexist with our gadget.
+        if (core.getBoolean(PREF_KEEP_ADB_TCP)) {
+            script.add("setprop " + PROP_ADB_TCP_PORT + " " + ADB_TCP_PORT);
+            script.add("start adbd 2>/dev/null || true");
+        }
+        run(script);
+
+        // Authoritative success check: the vendor-gadget unbind and our bind are
+        // best-effort (|| true) so the shell never aborts mid-switch, which means
+        // the shell's exit status says nothing. Read back the UDC and only report
+        // success when our gadget is actually attached to the controller.
+        String actual = read(GADGET_BASE + "/UDC").trim();
+        if (!actual.isEmpty()) {
             chmodHidNodes();
-            return udc;
+            return actual;
         }
         return null;
     }
 
     public boolean unbind() {
         List<String> script = new ArrayList<>();
+        // Detach our gadget (no ffs fd pins it, so this always succeeds).
         script.add("if [ -d " + sq(GADGET_BASE) + " ]; then "
                 + "echo > " + sq(GADGET_BASE + "/UDC") + " || true; fi");
+        script.add("sleep 0.3");
+        // Thaw the init triggers we froze during bind so Android can manage USB
+        // again, restoring their original values (default 1 when never captured).
+        script.add("setprop " + PROP_SYS_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_SYS_CONFIGFS)));
+        script.add("setprop " + PROP_VENDOR_CONFIGFS + " " + sq(savedTriggerValue(PREF_SAVED_VENDOR_CONFIGFS)));
+        boolean switched = core.getBoolean(PREF_SWITCHED);
+        if (switched) {
+            // Put adbd's TCP port back exactly as it was. Leaving 5555 behind keeps
+            // adbd listening on the network, which is what keeps Android's "USB
+            // debugging connected" notification on after the cable is unplugged.
+            script.add("setprop " + PROP_ADB_TCP_PORT + " " + sq(core.getString(PREF_SAVED_ADB_TCP_PORT)));
+            // adbd only re-reads the port on start, and a plain start is a no-op
+            // when it is already running in TCP mode, so restart it.
+            script.add("stop adbd 2>/dev/null || true");
+            script.add("sleep 0.5");
+        }
+        script.add("start adbd 2>/dev/null || true");
+        // adbd must be up (ffs ready) before the vendor gadget can bind. init's
+        // property trigger normally rebinds it; wait briefly and, if it did not,
+        // bind it ourselves for devices whose triggers do not fire.
+        script.add("sleep 1");
         String udc = capabilities().udcName;
         if (udc != null) {
-            script.add("if [ -d " + sq(VENDOR_GADGET) + " ]; then "
+            script.add("if [ -s " + sq(VENDOR_GADGET + "/UDC") + " ]; then : ; "
+                    + "elif [ -d " + sq(VENDOR_GADGET) + " ]; then "
                     + "echo " + sq(udc) + " > " + sq(VENDOR_GADGET + "/UDC") + " || true; fi");
         }
-        return run(script);
+        boolean ok = run(script);
+        if (switched) core.putBoolean(PREF_SWITCHED, false);
+        return ok;
+    }
+
+    private void rememberOriginalTriggerState() {
+        // Already switched by a previous Apply: the live values are ours (frozen
+        // triggers, possibly 5555), so keep the originals captured the first time.
+        if (core.getBoolean(PREF_SWITCHED)) return;
+        rememberTrigger(PREF_SAVED_SYS_CONFIGFS, getprop(PROP_SYS_CONFIGFS));
+        rememberTrigger(PREF_SAVED_VENDOR_CONFIGFS, getprop(PROP_VENDOR_CONFIGFS));
+        // An empty port is a legitimate original value, so store it as-is.
+        core.putString(PREF_SAVED_ADB_TCP_PORT, getprop(PROP_ADB_TCP_PORT));
+        core.putBoolean(PREF_SWITCHED, true);
+    }
+
+    private void rememberTrigger(String prefKey, String current) {
+        // Never persist our own frozen "0" as the original; otherwise a second
+        // Apply before a Restore would make us "restore" the frozen value. A real
+        // value (normally "1") is captured; "0"/blank keeps the prior original.
+        if (current != null && !current.isEmpty() && !current.equals("0")) {
+            core.putString(prefKey, current);
+        }
+    }
+
+    private String savedTriggerValue(String prefKey) {
+        String v = core.getString(prefKey);
+        return (v == null || v.isEmpty()) ? "1" : v;
+    }
+
+    private String getprop(String name) {
+        List<String> out = core.customCommand("getprop " + sq(name), true);
+        if (out != null) {
+            for (String line : out) {
+                if (line != null && !line.trim().isEmpty()) return line.trim();
+            }
+        }
+        return "";
     }
 
     public boolean teardown() {
@@ -147,17 +288,24 @@ public final class UsbGadgetController {
         return run(script);
     }
 
-    public boolean apply(@NonNull GadgetProfile profile) {
-        if (!prepare(profile)) {
+    @NonNull
+    public ApplyResult applyProfile(@NonNull GadgetProfile profile) {
+        EnumSet<GadgetFunction> created = prepare(profile);
+        if (created.isEmpty()) {
+            // Nothing the profile asked for is supported by this kernel.
             teardown();
-            return false;
+            return ApplyResult.failure(profile.functions, created);
         }
         String udc = bind();
         if (udc == null) {
             unbind();
-            return false;
+            return ApplyResult.failure(profile.functions, created);
         }
-        return true;
+        return ApplyResult.bound(udc, profile.functions, created);
+    }
+
+    public boolean apply(@NonNull GadgetProfile profile) {
+        return applyProfile(profile).success;
     }
 
     public boolean swapMassStorageImage(String absoluteImagePath,

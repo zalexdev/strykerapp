@@ -1230,8 +1230,12 @@ manager</string>
     <string name="arsenal_mass_cdrom">Emulate CD-ROM</string>
     <string name="arsenal_mass_inquiry">Inquiry string (28 ASCII)</string>
     <string name="arsenal_apply_ok">Profile applied — gadget bound to %s</string>
+    <string name="arsenal_apply_partial">Applied without %1$s — this kernel has no driver for it</string>
+    <string name="arsenal_apply_unsupported">Can\'t apply: %1$s not supported by this kernel</string>
     <string name="arsenal_apply_failed">Failed to apply profile (check logcat)</string>
     <string name="arsenal_restore_ok">Vendor gadget restored</string>
+    <string name="arsenal_keep_adb_label">Keep ADB over Wi-Fi (TCP 5555)</string>
+    <string name="arsenal_keep_adb_hint">Applying a profile takes over USB, so USB-ADB drops. Turn this on to switch ADB to Wi-Fi (adb connect PHONE_IP:5555) first. Off by default — this opens an unauthenticated ADB port on your network.</string>
     <string name="arsenal_save">Save</string>
     <string name="arsenal_cancel">Cancel</string>
     <string name="arsenal_vid_invalid">VID must look like 0x046d</string>
